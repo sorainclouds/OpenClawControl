@@ -1,0 +1,117 @@
+import Foundation
+
+// MARK: - OpenClaw API Models
+
+struct OCSession: Codable, Identifiable {
+    let key: String
+    let kind: String
+    let age: String
+    let model: String
+    let tokens: String
+    
+    var id: String { key }
+}
+
+struct OCStatus: Codable {
+    let gateway: GatewayInfo
+    let memory: MemoryInfo?
+    let sessions: [OCSession]?
+    let channels: [ChannelInfo]?
+    
+    struct GatewayInfo: Codable {
+        let local: String
+        let reachable: Bool
+        let authToken: String
+    }
+    
+    struct MemoryInfo: Codable {
+        let enabled: Bool
+    }
+    
+    struct ChannelInfo: Codable {
+        let channel: String
+        let enabled: Bool
+        let state: String
+    }
+}
+
+struct OCMessages: Codable {
+    let messages: [OCMessage]
+    
+    struct OCMessage: Codable, Identifiable {
+        let id: String
+        let senderId: String
+        let content: String
+        let timestamp: String
+        let source: String?
+    }
+}
+
+struct OCSendMessage: Codable {
+    let message: String
+    let channel: String?
+    let target: String?
+}
+
+// MARK: - Connection Configuration
+
+enum OCConnectionType: String, Codable, CaseIterable {
+    case local = "本地网络"
+    case tailscale = "Tailscale"
+    case vpn = "VPN/内网穿透"
+    case cloudflare = "Cloudflare Tunnel"
+    case publicNetwork = "公网"
+    
+    var description: String {
+        switch self {
+        case .local: return "同一网络下访问 (http://localhost:18789)"
+        case .tailscale: return "通过 Tailscale VPN 访问"
+        case .vpn: return "通过 VPN 或内网穿透服务访问"
+        case .cloudflare: return "通过 Cloudflare Tunnel 访问"
+        case .publicNetwork: return "通过公网域名/IP 访问"
+        }
+    }
+}
+
+struct OCServerConfig: Codable {
+    var connectionType: OCConnectionType
+    var baseURL: String          // 例如: http://192.168.1.x:18789 或 https://your-domain.com
+    var authToken: String        // Gateway 认证 token
+    var tailscaleIP: String?     // Tailscale IP (可选)
+    var customHeaders: [String: String]?
+    
+    static var `default`: OCServerConfig {
+        OCServerConfig(
+            connectionType: .local,
+            baseURL: "http://127.0.0.1:18789",
+            authToken: "",
+            tailscaleIP: nil,
+            customHeaders: nil
+        )
+    }
+}
+
+// MARK: - App State
+
+@Observable
+class OCAppState {
+    var serverConfig: OCServerConfig = .default
+    var isConnected: Bool = false
+    var status: OCStatus?
+    var sessions: [OCSession] = []
+    var messages: [String: [OCMessage]] = [:]  // sessionKey -> messages
+    var currentSessionKey: String?
+    var currentTask: String = "空闲中"
+    var modelUsage: ModelUsage = .zero
+    var isLoading: Bool = false
+    var errorMessage: String?
+    
+    struct ModelUsage: Codable {
+        var inputTokens: Int = 0
+        var outputTokens: Int = 0
+        var totalTokens: Int = 0
+        var sessionCount: Int = 0
+        
+        static var zero: ModelUsage { ModelUsage() }
+    }
+}
