@@ -10,11 +10,7 @@ let package = Package(
         .visionOS(.v1)
     ],
     products: [
-        .iOS(name: "OpenClawControl", targets: ["OpenClawControl"]),
-        .macOS(name: "OpenClawControl", targets: ["OpenClawControl"]),
-        .watchKitApp(name: "OpenClawControlWatch", targets: ["OpenClawControlWatch"]),
-        .watchKit2Extension(name: "OpenClawControlWatchExtension", targets: ["OpenClawControlWatchExtension"]),
-        .xrKitApp(name: "OpenClawControlVision", targets: ["OpenClawControlVision"])
+        .executable(name: "OpenClawControl", targets: ["OpenClawControl"])
     ],
     targets: [
         // iOS/macOS App
@@ -22,27 +18,6 @@ let package = Package(
             name: "OpenClawControl",
             dependencies: [],
             path: "Sources"
-        ),
-        
-        // watchOS App
-        .target(
-            name: "OpenClawControlWatch",
-            dependencies: ["OpenClawControlWatchExtension"],
-            path: "Watch/App"
-        ),
-        
-        // watchOS Extension
-        .target(
-            name: "OpenClawControlWatchExtension",
-            dependencies: [],
-            path: "Watch/Extension"
-        ),
-        
-        // visionOS App
-        .target(
-            name: "OpenClawControlVision",
-            dependencies: [],
-            path: "Vision/App"
         )
     ]
 )

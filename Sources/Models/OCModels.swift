@@ -12,6 +12,21 @@ struct OCSession: Codable, Identifiable {
     var id: String { key }
 }
 
+struct OCMessage: Codable, Identifiable {
+    let id: String
+    let senderId: String
+    let content: String
+    let timestamp: String
+    let source: String?
+    
+    var role: String {
+        if senderId == "user" || senderId == "operator" {
+            return "user"
+        }
+        return "assistant"
+    }
+}
+
 struct OCStatus: Codable {
     let gateway: GatewayInfo
     let memory: MemoryInfo?
@@ -37,14 +52,6 @@ struct OCStatus: Codable {
 
 struct OCMessages: Codable {
     let messages: [OCMessage]
-    
-    struct OCMessage: Codable, Identifiable {
-        let id: String
-        let senderId: String
-        let content: String
-        let timestamp: String
-        let source: String?
-    }
 }
 
 struct OCSendMessage: Codable {
@@ -64,7 +71,7 @@ enum OCConnectionType: String, Codable, CaseIterable {
     
     var description: String {
         switch self {
-        case .local: return "同一网络下访问 (http://localhost:18789)"
+        case .local: return "同一网络下访问 (ws://localhost:18789)"
         case .tailscale: return "通过 Tailscale VPN 访问"
         case .vpn: return "通过 VPN 或内网穿透服务访问"
         case .cloudflare: return "通过 Cloudflare Tunnel 访问"
@@ -75,7 +82,7 @@ enum OCConnectionType: String, Codable, CaseIterable {
 
 struct OCServerConfig: Codable {
     var connectionType: OCConnectionType
-    var baseURL: String          // 例如: http://192.168.1.x:18789 或 https://your-domain.com
+    var baseURL: String          // 例如: http://192.168.1.x:18789 或 wss://your-domain.com
     var authToken: String        // Gateway 认证 token
     var tailscaleIP: String?     // Tailscale IP (可选)
     var customHeaders: [String: String]?
@@ -83,35 +90,10 @@ struct OCServerConfig: Codable {
     static var `default`: OCServerConfig {
         OCServerConfig(
             connectionType: .local,
-            baseURL: "http://127.0.0.1:18789",
+            baseURL: "ws://127.0.0.1:18789",
             authToken: "",
             tailscaleIP: nil,
             customHeaders: nil
         )
-    }
-}
-
-// MARK: - App State
-
-@Observable
-class OCAppState {
-    var serverConfig: OCServerConfig = .default
-    var isConnected: Bool = false
-    var status: OCStatus?
-    var sessions: [OCSession] = []
-    var messages: [String: [OCMessage]] = [:]  // sessionKey -> messages
-    var currentSessionKey: String?
-    var currentTask: String = "空闲中"
-    var modelUsage: ModelUsage = .zero
-    var isLoading: Bool = false
-    var errorMessage: String?
-    
-    struct ModelUsage: Codable {
-        var inputTokens: Int = 0
-        var outputTokens: Int = 0
-        var totalTokens: Int = 0
-        var sessionCount: Int = 0
-        
-        static var zero: ModelUsage { ModelUsage() }
     }
 }

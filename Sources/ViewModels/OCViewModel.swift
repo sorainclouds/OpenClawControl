@@ -1,19 +1,19 @@
 import Foundation
+import SwiftUI
 import Combine
 
 // MARK: - Main ViewModel
 
-@MainActor
 @Observable
 class OCViewModel {
     // MARK: - Properties
     
-    let apiService = OCAPIService()
+    var client: OCWebSocketClient = OCWebSocketClient()
     
     var serverConfig: OCServerConfig = .default
     var isConnected: Bool = false
     var isConnecting: Bool = false
-    var status: OCStatus?
+    var status: GatewaySnapshot?
     var sessions: [OCSession] = []
     var messages: [String: [OCMessage]] = [:]
     var currentSessionKey: String?
@@ -23,6 +23,7 @@ class OCViewModel {
     
     // Chat
     var chatInput: String = ""
+    var chatMessages: [OCMessage] = []
     var selectedChannel: String = "qqbot"
     
     // Settings
@@ -46,66 +47,134 @@ class OCViewModel {
     
     // MARK: - Connection
     
+    @MainActor
     func connect() async {
         isConnecting = true
         errorMessage = nil
         
-        await apiService.updateConfig(serverConfig)
-        let connected = await apiService.testConnection()
-        
-        isConnected = connected
-        isConnecting = false
-        
-        if connected {
+        do {
+            // Convert http to ws
+            var wsURL = serverConfig.baseURL
+                .replacingOccurrences(of: "http://", with: "ws://")
+                .replacingOccurrences(of: "https://", with: "wss://")
+            
+            if !wsURL.hasPrefix("ws://") && !wsURL.hasPrefix("wss://") {
+                wsURL = "ws://" + wsURL
+            }
+            
+            client.configure(url: wsURL, token: serverConfig.authToken)
+            client.setEventHandler { [weak self] event, payload in
+                Task { @MainActor in
+                    self?.handleEvent(event, payload: payload)
+                }
+            }
+            
+            try await client.connect()
+            isConnected = true
             await refreshStatus()
             saveConfig()
-        } else {
-            errorMessage = "无法连接到服务器，请检查配置"
+        } catch {
+            errorMessage = "连接失败: \(error.localizedDescription)"
+            isConnected = false
         }
+        
+        isConnecting = false
     }
     
     func disconnect() {
+        client.disconnect()
         isConnected = false
         sessions = []
         messages = [:]
         status = nil
+        chatMessages = []
+    }
+    
+    // MARK: - Event Handling
+    
+    @MainActor
+    private func handleEvent(_ event: String, payload: [String: Any]) {
+        switch event {
+        case "chat":
+            handleChatEvent(payload)
+        case "presence":
+            // Update presence
+            break
+        case "agent":
+            // Agent event
+            break
+        default:
+            break
+        }
+    }
+    
+    @MainActor
+    private func handleChatEvent(_ payload: [String: Any]) {
+        guard let sessionKey = payload["sessionKey"] as? String,
+              sessionKey == currentSessionKey else {
+            return
+        }
+        
+        let state = payload["state"] as? String
+        
+        if state == "delta" || state == "final" {
+            Task {
+                await refreshMessages(for: sessionKey)
+            }
+        }
     }
     
     // MARK: - Data Fetching
     
+    @MainActor
     func refreshStatus() async {
         guard isConnected else { return }
         
         do {
-            status = try await apiService.fetchStatus()
-            sessions = try await apiService.fetchSessions()
+            // Fetch sessions
+            if let response = try await client.request("sessions.list", ["activeMinutes": 120]) {
+                parseSessionsResponse(response)
+            }
+            
+            // Fetch health
+            if let response = try await client.request("gateway.health", [:]) {
+                // Parse health status
+            }
+            
             calculateUsage()
         } catch {
             errorMessage = "获取状态失败: \(error.localizedDescription)"
         }
     }
     
+    @MainActor
     func refreshMessages(for sessionKey: String) async {
         guard isConnected else { return }
         
         do {
-            let msgs = try await apiService.fetchMessages(sessionKey: sessionKey)
-            messages[sessionKey] = msgs.messages.reversed()
+            if let response = try await client.request("chat.history", [
+                "sessionKey": sessionKey,
+                "limit": 100
+            ]) {
+                parseMessagesResponse(response, for: sessionKey)
+            }
         } catch {
             errorMessage = "获取消息失败: \(error.localizedDescription)"
         }
     }
     
+    @MainActor
     func sendMessage(_ content: String) async {
         guard isConnected, !content.isEmpty else { return }
         
         do {
-            if let sessionKey = currentSessionKey {
-                try await apiService.sendMessage(content, sessionKey: sessionKey)
-                await refreshMessages(for: sessionKey)
-            } else {
-                try await apiService.sendChannelMessage(channel: selectedChannel, message: content)
-            }
+            let params: [String: Any] = [
+                "sessionKey": currentSessionKey ?? "main",
+                "message": content,
+                "deliver": false
+            ]
+            
+            _ = try await client.request("chat.send", params)
             chatInput = ""
             await refreshStatus()
         } catch {
@@ -114,6 +183,51 @@ class OCViewModel {
     }
     
     // MARK: - Private
+    
+    private func parseSessionsResponse(_ response: [String: Any]) {
+        // Parse sessions from response
+        if let sessionsData = response["sessions"] as? [[String: Any]] {
+            sessions = sessionsData.map { dict in
+                OCSession(
+                    key: dict["key"] as? String ?? "",
+                    kind: dict["kind"] as? String ?? "direct",
+                    age: dict["age"] as? String ?? "",
+                    model: dict["model"] as? String ?? "",
+                    tokens: dict["tokens"] as? String ?? ""
+                )
+            }
+        }
+    }
+    
+    private func parseMessagesResponse(_ response: [String: Any], for sessionKey: String) {
+        if let messagesData = response["messages"] as? [[String: Any]] {
+            chatMessages = messagesData.map { dict in
+                OCMessage(
+                    id: dict["id"] as? String ?? UUID().uuidString,
+                    senderId: dict["senderId"] as? String ?? dict["role"] as? String ?? "unknown",
+                    content: extractContent(from: dict),
+                    timestamp: dict["timestamp"] as? String ?? "",
+                    source: dict["source"] as? String
+                )
+            }
+        }
+    }
+    
+    private func extractContent(from dict: [String: Any]) -> String {
+        if let content = dict["content"] as? String {
+            return content
+        }
+        if let contentArray = dict["content"] as? [[String: Any]] {
+            return contentArray.compactMap { item -> String? in
+                if let type = item["type"] as? String, type == "text",
+                   let text = item["text"] as? String {
+                    return text
+                }
+                return nil
+            }.joined()
+        }
+        return ""
+    }
     
     private func calculateUsage() {
         var total = 0
@@ -165,10 +279,53 @@ class OCViewModel {
     
     // MARK: - Connection Helper
     
+    @MainActor
     func testConnection() async {
         connectionTestResult = nil
-        await apiService.updateConfig(serverConfig)
-        let connected = await apiService.testConnection()
-        connectionTestResult = connected ? "✅ 连接成功" : "❌ 连接失败"
+        
+        var wsURL = serverConfig.baseURL
+            .replacingOccurrences(of: "http://", with: "ws://")
+            .replacingOccurrences(of: "https://", with: "wss://")
+        
+        if !wsURL.hasPrefix("ws://") && !wsURL.hasPrefix("wss://") {
+            wsURL = "ws://" + wsURL
+        }
+        
+        let testClient = OCWebSocketClient()
+        testClient.configure(url: wsURL, token: serverConfig.authToken)
+        
+        do {
+            try await testClient.connect()
+            connectionTestResult = "连接成功"
+            testClient.disconnect()
+        } catch {
+            connectionTestResult = "连接失败: \(error.localizedDescription)"
+        }
     }
+}
+
+// MARK: - Additional Models
+
+struct GatewaySnapshot: Codable {
+    let presence: [PresenceEntry]?
+    let sessionDefaults: SessionDefaults?
+    let health: HealthInfo?
+}
+
+struct PresenceEntry: Codable {
+    let sessionKey: String
+    let channel: String
+    let connectedAt: Int
+}
+
+struct SessionDefaults: Codable {
+    let mainSessionKey: String?
+    let mainKey: String?
+    let defaultAgentId: String?
+}
+
+struct HealthInfo: Codable {
+    let gateway: String?
+    let agents: String?
+    let memory: String?
 }
