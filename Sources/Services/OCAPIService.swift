@@ -44,7 +44,7 @@ actor OCAPIService {
     }
     
     func sendMessage(_ content: String, sessionKey: String? = nil, channel: String? = nil, target: String? = nil) async throws {
-        var url = "\(baseURL)/api/message"
+        let url = "\(baseURL)/api/message"
         
         var body: [String: Any] = ["message": content]
         if let sessionKey = sessionKey {

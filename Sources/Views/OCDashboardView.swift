@@ -78,15 +78,15 @@ struct StatusCard: View {
                 
                 Spacer()
                 
-                if let status = viewModel.status {
-                    Text(status.gateway.local)
+                if let status = viewModel.status, let health = status.health {
+                    Text(health.gateway ?? "N/A")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color(nsColor: .controlBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
     }
@@ -117,7 +117,7 @@ struct TokenUsageCard: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color(nsColor: .controlBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
     }
@@ -190,7 +190,7 @@ struct ActiveSessionsCard: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color(nsColor: .controlBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
     }
@@ -231,7 +231,7 @@ struct ChannelsCard: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color(nsColor: .controlBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
     }
@@ -259,7 +259,7 @@ struct CurrentTaskCard: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color(nsColor: .controlBackgroundColor))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
     }

@@ -312,6 +312,13 @@ struct GatewaySnapshot: Codable {
     let presence: [PresenceEntry]?
     let sessionDefaults: SessionDefaults?
     let health: HealthInfo?
+    let channels: [ChannelInfo]?
+}
+
+struct ChannelInfo: Codable {
+    let channel: String
+    let enabled: Bool
+    let state: String
 }
 
 struct PresenceEntry: Codable {
