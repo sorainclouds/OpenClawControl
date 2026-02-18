@@ -121,7 +121,6 @@ struct ConnectionConfigView: View {
                 Section {
                     TextField("服务器地址", text: $viewModel.serverConfig.baseURL)
                         .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
                     
                     SecureField("认证 Token", text: $viewModel.serverConfig.authToken)
                     
@@ -132,7 +131,7 @@ struct ConnectionConfigView: View {
                         ))
                         .autocorrectionDisabled()
                     }
-                } header {
+                } header: {
                     Text("服务器信息")
                 } footer: {
                     connectionHelpText
