@@ -37,7 +37,7 @@ struct OCDashboardView: View {
             }
             .navigationTitle("数据看板")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .automatic) {
                     if viewModel.isConnected {
                         Button {
                             Task {
