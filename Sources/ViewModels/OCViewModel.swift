@@ -18,7 +18,7 @@ class OCViewModel {
     var messages: [String: [OCMessage]] = [:]
     var currentSessionKey: String?
     var currentTask: String = "空闲中"
-    var modelUsage: ModelUsage = .zero
+    var modelUsage: ModelUsage = ModelUsage()
     var errorMessage: String?
     
     // Chat
