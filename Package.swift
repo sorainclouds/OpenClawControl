@@ -16,15 +16,11 @@ let package = Package(
         )
     ],
     targets: [
-        // iOS/macOS App
         .executableTarget(
             name: "OpenClawControl",
             dependencies: [],
             path: "Sources",
-            settings: [
-                .enableUpcomingFeature("StrictConcurrency"),
-                .macOSOSVersion("14.0")
-            ]
+            info: "Info.plist"
         )
     ]
 )
