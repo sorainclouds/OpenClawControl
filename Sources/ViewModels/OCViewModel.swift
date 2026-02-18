@@ -235,7 +235,7 @@ class OCViewModel {
         var total = 0
         for session in sessions {
             let tokenStr = session.tokens.replacingOccurrences(of: "k", with: "000")
-                .replacingOccurrences(of: "/200k", "")
+                .replacingOccurrences(of: "/200k", with: "")
                 .trimmingCharacters(in: .whitespaces)
             if let tokens = Int(tokenStr.components(separatedBy: "/").first ?? "0") {
                 total += tokens
