@@ -19,8 +19,7 @@ let package = Package(
         .executableTarget(
             name: "OpenClawControl",
             dependencies: [],
-            path: "Sources",
-            info: "Info.plist"
+            path: "Sources"
         )
     ]
 )
