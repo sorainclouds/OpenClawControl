@@ -14,7 +14,7 @@ let package = Package(
     ],
     targets: [
         // iOS/macOS App
-        .target(
+        .executableTarget(
             name: "OpenClawControl",
             dependencies: [],
             path: "Sources"
