@@ -39,7 +39,7 @@ struct OCChatView: View {
             }
             .navigationTitle(navigationTitle)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .automatic) {
                     if viewModel.isConnected {
                         Button {
                             Task {
