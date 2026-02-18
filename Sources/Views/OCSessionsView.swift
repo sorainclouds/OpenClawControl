@@ -29,7 +29,7 @@ struct OCSessionsView: View {
                                 }
                             }
                         }
-                        .listStyle(.insetGrouped)
+                        .listStyle(.plain)
                     }
                 } else {
                     NotConnectedView()
@@ -37,7 +37,7 @@ struct OCSessionsView: View {
             }
             .navigationTitle("会话列表")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .automatic) {
                     if viewModel.isConnected {
                         Button {
                             Task {

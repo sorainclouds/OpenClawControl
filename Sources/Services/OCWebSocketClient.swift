@@ -34,7 +34,7 @@ class OCWebSocketClient: NSObject {
         try await Task.sleep(nanoseconds: 500_000_000)
         
         // Send connect request
-        let connectParams: [String: Any] = [
+        var connectParams: [String: Any] = [
             "minProtocol": 3,
             "maxProtocol": 3,
             "client": [
