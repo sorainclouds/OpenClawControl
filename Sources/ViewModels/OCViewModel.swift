@@ -33,6 +33,8 @@ class OCViewModel {
     // MARK: - Model Usage
     
     struct ModelUsage {
+        static var zero: ModelUsage { ModelUsage() }
+        
         var inputTokens: Int = 0
         var outputTokens: Int = 0
         var totalTokens: Int = 0
