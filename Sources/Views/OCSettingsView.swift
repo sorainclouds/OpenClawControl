@@ -152,7 +152,6 @@ struct ConnectionConfigView: View {
                 }
             }
             .navigationTitle("服务器配置")
-            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") {
