@@ -10,14 +10,21 @@ let package = Package(
         .visionOS(.v1)
     ],
     products: [
-        .executable(name: "OpenClawControl", targets: ["OpenClawControl"])
+        .executable(
+            name: "OpenClawControl",
+            targets: ["OpenClawControl"]
+        )
     ],
     targets: [
         // iOS/macOS App
         .executableTarget(
             name: "OpenClawControl",
             dependencies: [],
-            path: "Sources"
+            path: "Sources",
+            settings: [
+                .enableUpcomingFeature("StrictConcurrency"),
+                .macOSOSVersion("14.0")
+            ]
         )
     ]
 )
