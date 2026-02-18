@@ -120,9 +120,8 @@ struct ConnectionConfigView: View {
                 
                 Section {
                     TextField("服务器地址", text: $viewModel.serverConfig.baseURL)
-                        .textInputAutocapitalization(.never)
-                        .keyboardType(.URL)
                         .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
                     
                     SecureField("认证 Token", text: $viewModel.serverConfig.authToken)
                     
@@ -131,10 +130,9 @@ struct ConnectionConfigView: View {
                             get: { viewModel.serverConfig.tailscaleIP ?? "" },
                             set: { viewModel.serverConfig.tailscaleIP = $0.isEmpty ? nil : $0 }
                         ))
-                        .textInputAutocapitalization(.never)
-                        .keyboardType(.numbersAndPunctuation)
+                        .autocorrectionDisabled()
                     }
-                } header: {
+                } header {
                     Text("服务器信息")
                 } footer: {
                     connectionHelpText
